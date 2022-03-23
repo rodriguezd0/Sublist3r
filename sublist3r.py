@@ -72,16 +72,7 @@ def no_color():
 
 
 def banner():
-    print("""%s
-                 ____        _     _ _     _   _____
-                / ___| _   _| |__ | (_)___| |_|___ / _ __
-                \___ \| | | | '_ \| | / __| __| |_ \| '__|
-                 ___) | |_| | |_) | | \__ \ |_ ___) | |
-                |____/ \__,_|_.__/|_|_|___/\__|____/|_|%s%s
-
-                # Coded By Ahmed Aboul-Ela - @aboul3la
-    """ % (R, W, Y))
-
+    print("Mod of Sublist3r - an Ahmed Aboul-Ela Tool - @aboul3la")
 
 def parser_error(errmsg):
     banner()
@@ -95,12 +86,13 @@ def parse_args():
     parser = argparse.ArgumentParser(epilog='\tExample: \r\npython ' + sys.argv[0] + " -d google.com")
     parser.error = parser_error
     parser._optionals.title = "OPTIONS"
-    parser.add_argument('-d', '--domain', help="Domain name to enumerate it's subdomains", required=True)
+    parser.add_argument('-d', '--domain', help="Domain name to enumerate it's subdomains", required=False)
+    parser.add_argument('-f', '--file', help='Enumerate subdomains from a text list (Automatic output to /output)')
     parser.add_argument('-b', '--bruteforce', help='Enable the subbrute bruteforce module', nargs='?', default=False)
     parser.add_argument('-p', '--ports', help='Scan the found subdomains against specified tcp ports')
     parser.add_argument('-v', '--verbose', help='Enable Verbosity and display results in realtime', nargs='?', default=False)
-    parser.add_argument('-t', '--threads', help='Number of threads to use for subbrute bruteforce', type=int, default=30)
     parser.add_argument('-e', '--engines', help='Specify a comma-separated list of search engines')
+    parser.add_argument('-t', '--threads', help='Number of threads to use for subbrute bruteforce', type=int, default=30)
     parser.add_argument('-o', '--output', help='Save the results to text file')
     parser.add_argument('-n', '--no-color', help='Output without color', default=False, action='store_true')
     return parser.parse_args()
@@ -112,6 +104,7 @@ def write_file(filename, subdomains):
     with open(str(filename), 'wt') as f:
         for subdomain in subdomains:
             f.write(subdomain + os.linesep)
+            f.write(subdomain.replace("<BR>", "\n") + "\n")
 
 
 def subdomain_sorting_key(hostname):
@@ -263,6 +256,7 @@ class enumratorBaseThreaded(multiprocessing.Process, enumratorBase):
         multiprocessing.Process.__init__(self)
         self.q = q
         return
+
 
     def run(self):
         domain_list = self.enumerate()
@@ -967,8 +961,7 @@ def main(domain, threads, savefile, ports, silent, verbose, enable_bruteforce, e
     if subdomains:
         subdomains = sorted(subdomains, key=subdomain_sorting_key)
 
-        if savefile:
-            write_file(savefile, subdomains)
+        write_file("output/" + savefile + ".txt", subdomains)
 
         if not silent:
             print(Y + "[-] Total Unique Subdomains Found: %s" % len(subdomains) + W)
@@ -990,17 +983,30 @@ def interactive():
     args = parse_args()
     domain = args.domain
     threads = args.threads
-    savefile = args.output
+    savefile = domain
+    argFile = args.file
     ports = args.ports
     enable_bruteforce = args.bruteforce
     verbose = args.verbose
     engines = args.engines
-    if verbose or verbose is None:
-        verbose = True
-    if args.no_color:
-        no_color()
-    banner()
-    res = main(domain, threads, savefile, ports, silent=False, verbose=verbose, enable_bruteforce=enable_bruteforce, engines=engines)
+
+    if argFile:
+        file1 = open(argFile, 'r')
+        Lines = file1.readlines()
+        banner()
+        for line in Lines:
+            domain = line.strip()
+            savefile = domain
+            res = main(line.strip(), threads, savefile, ports, silent=False, verbose=verbose, enable_bruteforce=enable_bruteforce, engines=engines)
+        if verbose or verbose is None:
+            verbose = True
+    else:
+        if verbose or verbose is None:
+            verbose = True
+        if args.no_color:
+            no_color()
+        banner()
+        res = main(domain, threads, savefile, ports, silent=False, verbose=verbose, enable_bruteforce=enable_bruteforce, engines=engines)
 
 if __name__ == "__main__":
     interactive()
